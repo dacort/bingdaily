@@ -59,7 +59,7 @@ func menuItems() []menuet.MenuItem {
 	}
 	if wallpaperURL != "" {
 		items = append(items, menuet.MenuItem{
-			Text: "Open on Bing",
+			Text: "More info...",
 			Clicked: func() {
 				fmt.Println("Opening", wallpaperURL)
 				open(wallpaperURL)
@@ -68,7 +68,7 @@ func menuItems() []menuet.MenuItem {
 	}
 	if quizURL != "" {
 		items = append(items, menuet.MenuItem{
-			Text: "Quiz link",
+			Text: "Quiz link...",
 			Clicked: func() {
 				open(quizURL)
 			},
