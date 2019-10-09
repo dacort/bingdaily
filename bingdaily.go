@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,12 +18,6 @@ import (
 const bingRoot = "https://www.bing.com"
 const bingURL = bingRoot + "/HPImageArchive.aspx?format=js&idx=0&n=1"
 
-// TODO: Instead of updating each of these individual variables, pass in a response objecct
-var wallpaperTitle = "Updating..."
-var wallpaperURL = ""
-var quizURL = ""
-var description = ""
-
 type bingResponse struct {
 	Images []struct {
 		URL          string `json:"url"`
@@ -30,116 +25,141 @@ type bingResponse struct {
 		Copyright    string `json:"copyright"`
 		CopyrightURL string `json:"copyrightlink"`
 		QuizURL      string `json:"quiz"`
+		Hash         string `json:"hsh"`
 	} `json:"images"`
 }
 
-var latestBingResponse bingResponse
-
-func open(url string) {
-	exec.Command("open", url).Run()
+type bingWallpaper struct {
+	WallpaperTitle string
+	ImageURL       string
+	SearchURL      string
+	QuizURL        string
+	Descriptiong   string
+	Hash           string
 }
 
-func (br bingResponse) open() {
-	exec.Command("open", br.Images[0].URL).Run()
+var latestBingWallpaper = bingWallpaper{
+	WallpaperTitle: "Updating...",
 }
 
+// menuItems will get called every time the menu bar gets clicked on
 func menuItems() []menuet.MenuItem {
-	// fmt.Println("called menuItems")
+	fmt.Println("called menuItems")
 	items := []menuet.MenuItem{
 		{
-			Text: wallpaperTitle,
-			// FontSize: 9,
+			Text: latestBingWallpaper.WallpaperTitle,
 		},
-		// {
-		// 	Text: description,
-		// },
 		{
 			Type: menuet.Separator,
 		},
 	}
-	if wallpaperURL != "" {
+	if latestBingWallpaper.SearchURL != "" {
 		items = append(items, menuet.MenuItem{
 			Text: "More info...",
 			Clicked: func() {
-				fmt.Println("Opening", wallpaperURL)
-				open(wallpaperURL)
+				fmt.Println("Opening", latestBingWallpaper.SearchURL)
+				open(latestBingWallpaper.SearchURL)
 			},
 		})
 	}
-	if quizURL != "" {
+	if latestBingWallpaper.QuizURL != "" {
 		items = append(items, menuet.MenuItem{
 			Text: "Quiz link...",
 			Clicked: func() {
-				open(quizURL)
+				open(latestBingWallpaper.QuizURL)
 			},
 		})
 	}
 	return items
 }
 
-func getCurrentWallpaperURL() (bingResponse, error) {
+func open(url string) {
+	exec.Command("open", url).Run()
+}
+
+func syncWithBing() {
+	bwData, err := getLatestWallpaperMetadata()
+	if err != nil {
+		log.Println("Sorry, there was an error fetching the latest wallpaper metadata...will retry later!", err)
+		return
+	}
+
+	// No need to update if the hash is the same!
+	if bwData.Hash == latestBingWallpaper.Hash {
+		log.Println("No update to the Image of the day! Continue on your merry way. :)")
+		return
+	}
+
+	// Try to save the wallpaper to a file. If we don't succeed...we'll just retry in an hour :)
+	filename, err := saveWallpaper(bwData)
+	if err != nil {
+		return
+	}
+
+	err = setWallpaperToFile(filename)
+	if err != nil {
+		return
+	}
+
+	latestBingWallpaper = bwData
+}
+
+func getLatestWallpaperMetadata() (bw bingWallpaper, err error) {
 	var br bingResponse
-	fmt.Println("Downloading new wallpaper data")
+	log.Println("Downloading new wallpaper data")
 	resp, err := http.Get(bingURL)
 	if err != nil {
-		return br, err
+		log.Printf("Error downloading url (%s): %s", bingURL, err)
+		return bw, err
 	}
 
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
-
 	err = dec.Decode(&br)
 	if err != nil {
-		return br, err
+		return bw, err
 	}
-	fmt.Println("Wallpaper: ", br)
-	return br, nil
+
+	// TODO: Make ... less terrible?
+	bw.WallpaperTitle = br.Images[0].Title
+	bw.ImageURL = bingRoot + br.Images[0].URL
+	bw.SearchURL = br.Images[0].CopyrightURL
+	bw.QuizURL = bingRoot + br.Images[0].QuizURL
+	bw.Descriptiong = br.Images[0].Copyright
+	bw.Hash = br.Images[0].Hash
+
+	return bw, nil
 }
 
-func downloadBing() {
-	filename := fmt.Sprintf("/tmp/bingdaily-%s.jpg", time.Now().Format("2006-01-02"))
-	br, err := getCurrentWallpaperURL()
-	if err != nil {
-		fmt.Println("Could not get wallpaper info: ", err)
-		return
-	}
+func saveWallpaper(bw bingWallpaper) (filename string, err error) {
+	filename = fmt.Sprintf("/tmp/bingdaily-%s.jpg", time.Now().Format("2006-01-02"))
 
-	file, err := os.Create(filename)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	resp, err := http.Get(bingRoot + br.Images[0].URL)
-	if err != nil {
-		return
+	// Fetch the image
+	resp, err := http.Get(bw.ImageURL)
+	if err != nil || resp.StatusCode != 200 {
+		log.Printf("There was an error downloading %s (%d): %s", bw.ImageURL, resp.StatusCode, err.Error())
+		return "", err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Printf("Couldn't create file (%s): %s", filename, err.Error())
+		return "", err
 	}
+	defer file.Close()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return
+		log.Println("Couldn't save the downloaded image to a file:", err)
+		return "", err
 	}
 
-	fmt.Println("Setting wallpaper to: ", filename)
-	err = SetFromFile(filename)
-	if err != nil {
-		fmt.Println("Unable to set desktop :(", err)
-		return
-	}
-
-	description = br.Images[0].Copyright
-	wallpaperTitle = br.Images[0].Title
-	wallpaperURL = br.Images[0].CopyrightURL
-	quizURL = bingRoot + br.Images[0].QuizURL
+	return filename, nil
 }
 
-// SetFromFile uses AppleScript to tell Finder to set the desktop wallpaper to specified file.
-func SetFromFile(file string) error {
+// setWallpaperToFile uses AppleScript to tell Finder to set the desktop wallpaper to specified file.
+func setWallpaperToFile(file string) error {
 	// THis works, but you need to killall Dock
 	// sqlite3 ~/Library/Application\ Support/Dock/desktoppicture.db "update data set value = '/Library/Mobile Documents/com~apple~CloudDocs/Wallpaper'" && killall Dock
 	cmd := exec.Command("osascript", "-e", `tell application "System Events" to tell every desktop to set picture to `+strconv.Quote(file))
@@ -154,29 +174,21 @@ func SetFromFile(file string) error {
 func main() {
 	go func() {
 		for {
-			menuet.App().SetMenuState(&menuet.MenuState{
-				Title: "🌄",
-			})
-			downloadBing()
+			syncWithBing()
 			menuet.App().MenuChanged()
-			time.Sleep(time.Hour)
+			time.Sleep(time.Second)
 		}
 	}()
-	// go func() {
-	// 	for {
-	// 		menuet.App().SetMenuState(&menuet.MenuState{
-	// 			Title: "🌄",
-	// 		})
-	// 		menuet.App().MenuChanged()
-	// 		time.Sleep(time.Second)
-	// 	}
-	// }()
-	// menuet.App().RunApplication()
 
 	app := menuet.App()
+	app.SetMenuState(&menuet.MenuState{
+		Title: "🌄",
+	})
 	app.Name = "BingDaily"
 	app.Label = "com.github.dacort.bingdaily"
 	app.Children = menuItems
+
+	// TODO: For later
 	// app.AutoUpdate.Version = "v0.1"
 	// app.AutoUpdate.Repo = "caseymrm/notafan"
 	app.RunApplication()
