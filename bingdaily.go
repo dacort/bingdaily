@@ -176,7 +176,7 @@ func main() {
 		for {
 			syncWithBing()
 			menuet.App().MenuChanged()
-			time.Sleep(time.Second)
+			time.Sleep(time.Hour)
 		}
 	}()
 
