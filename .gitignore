@@ -1,2 +1,9 @@
 # executable
 bingdaily
+
+# macos cruft
+.DS_Store
+
+# build artifiacts
+BingDaily.app/Contents/MacOS
+BingDaily.app/Contents/Info.plist

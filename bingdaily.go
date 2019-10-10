@@ -38,13 +38,25 @@ type bingWallpaper struct {
 	Hash           string
 }
 
+func (bw bingWallpaper) openSearchURL() {
+	bw.logAndOpenURL(bw.SearchURL)
+}
+
+func (bw bingWallpaper) openQuizURL() {
+	bw.logAndOpenURL(bw.QuizURL)
+}
+
+func (bw bingWallpaper) logAndOpenURL(url string) {
+	log.Println("Opening", latestBingWallpaper.SearchURL)
+	exec.Command("open", url).Run()
+}
+
 var latestBingWallpaper = bingWallpaper{
 	WallpaperTitle: "Updating...",
 }
 
 // menuItems will get called every time the menu bar gets clicked on
 func menuItems() []menuet.MenuItem {
-	fmt.Println("called menuItems")
 	items := []menuet.MenuItem{
 		{
 			Text: latestBingWallpaper.WallpaperTitle,
@@ -55,26 +67,17 @@ func menuItems() []menuet.MenuItem {
 	}
 	if latestBingWallpaper.SearchURL != "" {
 		items = append(items, menuet.MenuItem{
-			Text: "More info...",
-			Clicked: func() {
-				fmt.Println("Opening", latestBingWallpaper.SearchURL)
-				open(latestBingWallpaper.SearchURL)
-			},
+			Text:    "More info...",
+			Clicked: latestBingWallpaper.openSearchURL,
 		})
 	}
 	if latestBingWallpaper.QuizURL != "" {
 		items = append(items, menuet.MenuItem{
-			Text: "Quiz link...",
-			Clicked: func() {
-				open(latestBingWallpaper.QuizURL)
-			},
+			Text:    "Quiz link...",
+			Clicked: latestBingWallpaper.openQuizURL,
 		})
 	}
 	return items
-}
-
-func open(url string) {
-	exec.Command("open", url).Run()
 }
 
 func syncWithBing() {
@@ -100,6 +103,12 @@ func syncWithBing() {
 	if err != nil {
 		return
 	}
+
+	// Only shows up when run as an application bundle
+	menuet.App().Notification(menuet.Notification{
+		Title:    fmt.Sprintf("New Bing Image of the Day"),
+		Subtitle: bwData.WallpaperTitle,
+	})
 
 	latestBingWallpaper = bwData
 }
