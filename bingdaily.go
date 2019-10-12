@@ -108,6 +108,8 @@ func syncWithBing() {
 	menuet.App().Notification(menuet.Notification{
 		Title:    fmt.Sprintf("New Bing Image of the Day"),
 		Subtitle: bwData.WallpaperTitle,
+		ActionButton: "Show desktop",
+		CloseButton: "Close",
 	})
 
 	latestBingWallpaper = bwData
@@ -196,6 +198,11 @@ func main() {
 	app.Name = "BingDaily"
 	app.Label = "com.github.dacort.bingdaily"
 	app.Children = menuItems
+
+	// This needs to be implemented or the process crashes when click on the notification
+	app.NotificationResponder = func(id, response string) {
+		showDesktop()
+	}
 
 	// TODO: For later
 	// app.AutoUpdate.Version = "v0.1"
