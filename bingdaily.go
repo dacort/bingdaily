@@ -10,9 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/caseymrm/menuet"
+	"github.com/hako/durafmt"
 )
 
 const bingRoot = "https://www.bing.com"
@@ -34,8 +36,33 @@ type bingWallpaper struct {
 	ImageURL       string
 	SearchURL      string
 	QuizURL        string
-	Descriptiong   string
+	Description    string
 	Hash           string
+	lastCheckedAt  time.Time
+}
+
+func (bw bingWallpaper) isDefault() bool {
+	return bw.WallpaperTitle == "Updating..."
+}
+
+func (bw bingWallpaper) getRelativeupdatedAt() string {
+	if bw.isDefault() {
+		return "Not yet!"
+	}
+
+	timeDiff := time.Since(bw.lastCheckedAt).Round(time.Second)
+	return durafmt.Parse(timeDiff).LimitFirstN(2).String() + " ago"
+}
+
+func shortDur(d time.Duration) string {
+	s := d.String()
+	if strings.HasSuffix(s, "m0s") {
+		s = s[:len(s)-2]
+	}
+	if strings.HasSuffix(s, "h0m") {
+		s = s[:len(s)-2]
+	}
+	return s
 }
 
 func (bw bingWallpaper) openSearchURL() {
@@ -65,18 +92,39 @@ func menuItems() []menuet.MenuItem {
 			Type: menuet.Separator,
 		},
 	}
-	if latestBingWallpaper.SearchURL != "" {
-		items = append(items, menuet.MenuItem{
-			Text:    "More info...",
-			Clicked: latestBingWallpaper.openSearchURL,
-		})
+
+	// Only add this data if we've updated the wallpaper
+	if !latestBingWallpaper.isDefault() {
+		// Image detail and quiz info
+		items = append(items, []menuet.MenuItem{
+			{
+				Text:    "More info...",
+				Clicked: latestBingWallpaper.openSearchURL,
+			},
+			{
+				Text:    "Quiz link...",
+				Clicked: latestBingWallpaper.openQuizURL,
+			},
+			{
+				Type: menuet.Separator,
+			},
+		}...)
+
+		// Image metadata
+		items = append(items, []menuet.MenuItem{
+			{
+				Text: fmt.Sprintf("Last checked %s", latestBingWallpaper.getRelativeupdatedAt()),
+			},
+			{
+				Text:    "Check for new image...",
+				Clicked: syncWithBing,
+			},
+			{
+				Type: menuet.Separator,
+			},
+		}...)
 	}
-	if latestBingWallpaper.QuizURL != "" {
-		items = append(items, menuet.MenuItem{
-			Text:    "Quiz link...",
-			Clicked: latestBingWallpaper.openQuizURL,
-		})
-	}
+
 	return items
 }
 
@@ -90,6 +138,7 @@ func syncWithBing() {
 	// No need to update if the hash is the same!
 	if bwData.Hash == latestBingWallpaper.Hash {
 		log.Println("No update to the Image of the day! Continue on your merry way. :)")
+		latestBingWallpaper.lastCheckedAt = time.Now()
 		return
 	}
 
@@ -106,10 +155,10 @@ func syncWithBing() {
 
 	// Only shows up when run as an application bundle
 	menuet.App().Notification(menuet.Notification{
-		Title:    fmt.Sprintf("New Bing Image of the Day"),
-		Subtitle: bwData.WallpaperTitle,
+		Title:        fmt.Sprintf("New Bing Image of the Day"),
+		Subtitle:     bwData.WallpaperTitle,
 		ActionButton: "Show desktop",
-		CloseButton: "Close",
+		CloseButton:  "Close",
 	})
 
 	latestBingWallpaper = bwData
@@ -136,8 +185,9 @@ func getLatestWallpaperMetadata() (bw bingWallpaper, err error) {
 	bw.ImageURL = bingRoot + br.Images[0].URL
 	bw.SearchURL = br.Images[0].CopyrightURL
 	bw.QuizURL = bingRoot + br.Images[0].QuizURL
-	bw.Descriptiong = br.Images[0].Copyright
+	bw.Description = br.Images[0].Copyright
 	bw.Hash = br.Images[0].Hash
+	bw.lastCheckedAt = time.Now()
 
 	return bw, nil
 }

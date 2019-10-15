@@ -2,3 +2,5 @@ github.com/caseymrm/askm v0.0.0-20180731222743-ac4324c25a4d h1:mt5eQho3aNs5XUL1b
 github.com/caseymrm/askm v0.0.0-20180731222743-ac4324c25a4d/go.mod h1:raj+vtH8SsGkuSg1/970qaONNyNlIb7zFv2LDVk6j+U=
 github.com/caseymrm/menuet v0.0.0-20190531183154-4edda5beb73d h1:pJuioI1J8CE6l6/Uf24/WG62BqGvSaYqUOs9JFlwsBM=
 github.com/caseymrm/menuet v0.0.0-20190531183154-4edda5beb73d/go.mod h1:Js6Ar/bOjjH+GVb4FFqOFkvKXi8VhIUKj8EY41lkCiE=
+github.com/hako/durafmt v0.0.0-20191009132224-3f39dc1ed9f4 h1:60gBOooTSmNtrqNaRvrDbi8VAne0REaek2agjnITKSw=
+github.com/hako/durafmt v0.0.0-20191009132224-3f39dc1ed9f4/go.mod h1:5Scbynm8dF1XAPwIwkGPqzkM/shndPm79Jd1003hTjE=

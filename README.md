@@ -14,3 +14,8 @@ On first run, it will download today's Bing image and make it your background.
 You can see the name of the image in your new menu bar item and get more info or open today's quiz using the appropriate links.
 
 It will attempt to update the background every hour while the app is running.
+
+## ToDos
+
+- ~~Add "last updated" menu item~~
+- ~~Add "check for update" menu item~~
