@@ -98,11 +98,11 @@ func menuItems() []menuet.MenuItem {
 		// Image detail and quiz info
 		items = append(items, []menuet.MenuItem{
 			{
-				Text:    "More info...",
+				Text:    "Search on Bing",
 				Clicked: latestBingWallpaper.openSearchURL,
 			},
 			{
-				Text:    "Quiz link...",
+				Text:    "Take the quiz!",
 				Clicked: latestBingWallpaper.openQuizURL,
 			},
 			{
@@ -116,7 +116,7 @@ func menuItems() []menuet.MenuItem {
 				Text: fmt.Sprintf("Last checked %s", latestBingWallpaper.getRelativeupdatedAt()),
 			},
 			{
-				Text:    "Check for new image...",
+				Text:    "Check for new image",
 				Clicked: syncWithBing,
 			},
 			{
@@ -233,6 +233,7 @@ func setWallpaperToFile(file string) error {
 }
 
 func main() {
+	go registerNotification()
 	go func() {
 		for {
 			syncWithBing()
