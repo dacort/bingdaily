@@ -7,7 +7,7 @@ A fun little side project that downloads the Bing Image of the day and makes it 
 
 ## Running
 
-For now, either build with `go build && ./bingdaily` or run the app directly with `go run bingdaily.go`.
+Download the latest `BingDaily.zip` file from the [releases](https://github.com/dacort/bingdaily/releases) page, unzip and run!
 
 On first run, it will download today's Bing image and make it your background.
 
@@ -15,7 +15,3 @@ You can see the name of the image in your new menu bar item and get more info or
 
 It will attempt to update the background every hour while the app is running.
 
-## ToDos
-
-- ~~Add "last updated" menu item~~
-- ~~Add "check for update" menu item~~
