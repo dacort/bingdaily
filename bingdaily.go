@@ -23,6 +23,7 @@ const bingURL = bingRoot + "/HPImageArchive.aspx?format=js&idx=0&n=1"
 type bingResponse struct {
 	Images []struct {
 		URL          string `json:"url"`
+		URLBase		 string `json:"urlbase"`
 		Title        string `json:"title"`
 		Copyright    string `json:"copyright"`
 		CopyrightURL string `json:"copyrightlink"`
@@ -182,7 +183,7 @@ func getLatestWallpaperMetadata() (bw bingWallpaper, err error) {
 
 	// TODO: Make ... less terrible?
 	bw.WallpaperTitle = br.Images[0].Title
-	bw.ImageURL = bingRoot + br.Images[0].URL
+	bw.ImageURL = bingRoot + br.Images[0].URLBase + "_UHD.jpg"
 	bw.SearchURL = br.Images[0].CopyrightURL
 	bw.QuizURL = bingRoot + br.Images[0].QuizURL
 	bw.Description = br.Images[0].Copyright

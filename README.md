@@ -25,3 +25,11 @@ I had big issues figuring out how to set the App icon, these links came in handy
 - https://stackoverflow.com/questions/11856766/osx-notification-center-icon
 
 At the end of the day, I think it was just cached.
+
+## Releasing
+
+```shell
+make zip
+```
+
+Then create a new GitHub release and upload.
